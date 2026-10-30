@@ -129,7 +129,7 @@ footer .f{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .stats{animation:fadeUp .8s .5s both}
 .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
 .reveal.visible{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.hero-badge,.hero h1,.hero p,.hero .cta,.ticks,.stats{animation:none}.reveal{opacity:1;transform:none;transition:none}.marquee-track{animation:none}}
+@media (prefers-reduced-motion:reduce){.hero-badge,.hero h1,.hero p,.hero .cta,.ticks,.stats{animation:none}.reveal{opacity:1;transform:none;transition:none}.marquee-track{animation:none}.shiny{animation:none}.split-char{opacity:1!important;transform:none!important}}
 .chat-btn{position:fixed;right:20px;bottom:88px;z-index:61;width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#22D3EE,#8B5CF6,#EC4899);border:2px solid rgba(255,255,255,.35);cursor:pointer;box-shadow:0 8px 24px rgba(139,92,246,.45);display:flex;align-items:center;justify-content:center;overflow:hidden;animation:chatPulse 3s ease-in-out infinite}
 .chat-btn:before{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-130%);animation:shine 3.5s ease-in-out infinite}
 @keyframes chatPulse{0%,100%{box-shadow:0 8px 24px rgba(139,92,246,.45)}50%{box-shadow:0 8px 38px rgba(34,211,238,.7),0 0 0 7px rgba(139,92,246,.15)}}
@@ -156,7 +156,19 @@ footer .f{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .chat-input button{background:var(--grad);border:0;color:#fff;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:16px;flex:none}
 @media(max-width:900px){section{scroll-margin-top:110px}.header-cta{display:none}.nav{min-height:96px}.logo{display:flex;align-items:center;font-size:28px;line-height:1.15}.logo-img{height:42px;width:42px}.logo span{display:block;font-size:20px;font-weight:800;letter-spacing:0;color:var(--text);margin-top:3px}.grid,.steps,.ind-grid{grid-template-columns:1fr 1fr}.why{grid-template-columns:1fr}.nav{position:relative}.hamburger{display:flex;visibility:visible;width:auto;height:auto;overflow:visible;padding:8px}.navlinks{display:none;position:absolute;top:100%;left:0;right:0;background:#0d0d0d;flex-direction:column;align-items:stretch;padding:8px 22px 22px;gap:0;border-bottom:1px solid var(--line);box-shadow:0 20px 40px rgba(0,0,0,.6);z-index:60}.navlinks.open{display:flex}.navlinks a{padding:16px 0;border-bottom:1px solid var(--line);font-size:17px}.navlinks a:last-child{border-bottom:0}.navlinks .nav-cta{margin-top:14px;background:var(--lime);color:#000000!important;text-align:center;border-radius:12px;padding:14px}.hamburger.open span:nth-child(1){transform:translateY(8px) rotate(45deg)}.hamburger.open span:nth-child(2){opacity:0}.hamburger.open span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}}
 @media(max-width:560px){.grid,.steps{grid-template-columns:1fr}.hero{padding:64px 0 44px}.hero h1{font-size:44px;line-height:1.12}.slides{padding:0 30px}.hero-arrow{font-size:40px;padding:6px}.hero-arrow.prev{left:2px}.hero-arrow.next{right:2px}.hero p{font-size:17px}.spotlight{grid-template-columns:1fr;padding:28px 22px}.ind-grid{grid-template-columns:1fr}}
+/* ---- Motion upgrade: GSAP + Motion + ReactBits-style effects ---- */
+.split-char{display:inline-block;will-change:transform,opacity}
+.chars-hidden .split-char{opacity:0}
+.split-em .em-char{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+@keyframes shineSweep{to{background-position:-200% 0}}
+.shiny{background:linear-gradient(110deg,var(--lime) 25%,#ffffff 45%,var(--lime) 65%);background-size:220% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shineSweep 3.4s linear infinite}
+.magnet{will-change:transform}
+#serviceGrid .card{position:relative;overflow:hidden}
+#serviceGrid .card::after{content:"";position:absolute;inset:0;background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),rgba(34,211,238,.17),transparent 65%);opacity:0;transition:opacity .35s;pointer-events:none}
+#serviceGrid .card:hover::after{opacity:1}
+#sparkCanvas{position:fixed;inset:0;pointer-events:none;z-index:9999}
 </style>
+<script type="importmap">{"imports":{"motion":"https://esm.sh/motion@12"}}</script>
 </head>
 <body>
 <header>
@@ -403,6 +415,159 @@ footer .f{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 </div>
 <button class="chat-label" id="chatLabel">AI Agent</button>
 <button class="chat-btn" id="chatBtn" aria-label="Chat with us"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#ffffff" d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/></svg></button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+/* Ranks Crafter motion upgrade: GSAP + ScrollTrigger, Motion (motion.dev),
+   ReactBits-style effects (SplitText, ShinyText, Magnet, ClickSpark, SpotlightCard).
+   Everything here is progressive enhancement: if a CDN fails or the user prefers
+   reduced motion, the site falls back to its original behavior untouched. */
+(function(){
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var hasGsap = !!(window.gsap && window.ScrollTrigger);
+  window.RC_MOTION = hasGsap && !reduced;
+  if(reduced) return;
+
+  /* ---------- ReactBits-style: SplitText on hero headlines ---------- */
+  function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function splitChars(h1){
+    var frag=document.createDocumentFragment();
+    Array.prototype.slice.call(h1.childNodes).forEach(function(n){
+      if(n.nodeType===3){
+        n.textContent.split('').forEach(function(ch){
+          var s=document.createElement('span');s.className='split-char';
+          s.innerHTML=(ch===' ')?'&nbsp;':escH(ch);frag.appendChild(s);
+        });
+      }else if(n.nodeName==='BR'){frag.appendChild(document.createElement('br'));}
+      else{
+        var wrap=document.createElement('span');wrap.className='split-em';
+        n.textContent.split('').forEach(function(ch){
+          var s=document.createElement('span');s.className='split-char em-char';
+          s.innerHTML=(ch===' ')?'&nbsp;':escH(ch);wrap.appendChild(s);
+        });
+        frag.appendChild(wrap);
+      }
+    });
+    h1.innerHTML='';h1.appendChild(frag);h1.classList.add('chars-hidden');
+  }
+  var slides=document.querySelectorAll('.slide');
+  if(hasGsap && slides.length){
+    gsap.registerPlugin(ScrollTrigger);
+    slides.forEach(function(sl){var h=sl.querySelector('h1');if(h)splitChars(h);});
+    window.__animateSlideChars=function(idx){
+      slides.forEach(function(sl,j){
+        var chars=sl.querySelectorAll('.split-char');
+        if(j===idx){gsap.fromTo(chars,{opacity:0,y:'0.55em',rotate:5},{opacity:1,y:'0em',rotate:0,duration:.65,stagger:.016,ease:'back.out(1.7)',overwrite:true});}
+        else{gsap.set(chars,{opacity:0,y:'0.55em',rotate:5,overwrite:true});}
+      });
+    };
+    window.addEventListener('load',function(){
+      if(typeof window.showSlide==='function'){
+        var orig=window.showSlide;
+        window.showSlide=function(i){
+          var r=orig(i);
+          var act=document.querySelector('.slide.active');
+          window.__animateSlideChars(Array.prototype.indexOf.call(slides,act));
+          return r;
+        };
+        var act0=document.querySelector('.slide.active');
+        window.__animateSlideChars(Array.prototype.indexOf.call(slides,act0));
+      }
+    });
+  }
+
+  if(window.RC_MOTION){
+    /* ---------- GSAP ScrollTrigger: section reveals (replaces basic IO) ---------- */
+    var revealEls=document.querySelectorAll('.card,.ind,.step,.why div,.spotlight,.cta-band,form,.faq details');
+    revealEls.forEach(function(el){el.classList.remove('reveal');});
+    gsap.set(revealEls,{opacity:0,y:28});
+    ScrollTrigger.batch(revealEls,{start:'top 90%',once:true,
+      onEnter:function(els){gsap.to(els,{opacity:1,y:0,duration:.85,stagger:.09,ease:'power3.out',overwrite:true});}});
+    document.querySelectorAll('.chip').forEach(function(c){
+      c.addEventListener('click',function(){setTimeout(function(){ScrollTrigger.refresh();},60);});
+    });
+
+    /* ---------- GSAP: stat counters ---------- */
+    var statsEl=document.querySelector('.stats');
+    if(statsEl){
+      ScrollTrigger.create({trigger:statsEl,start:'top 88%',once:true,onEnter:function(){
+        statsEl.querySelectorAll('b').forEach(function(b){
+          var txt=b.textContent.trim(),suffix='',base=txt;
+          if(txt.indexOf('/')>-1){var p=txt.split('/');base=p[0];suffix='/'+p[1];}
+          var dec=base.indexOf('.')>-1?1:0,target=parseFloat(base),o={v:0};
+          gsap.to(o,{v:target,duration:1.4,ease:'power2.out',onUpdate:function(){
+            b.textContent=(dec?o.v.toFixed(1):Math.round(o.v))+suffix;}});
+        });
+      }});
+    }
+
+    /* ---------- GSAP: hero parallax on scroll ---------- */
+    gsap.to('.hero .wrap',{yPercent:10,opacity:.35,ease:'none',
+      scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+
+    /* ---------- GSAP: heading entrances ---------- */
+    gsap.utils.toArray('#services h2, #reviews h2, #contact h2').forEach(function(h){
+      gsap.from(h,{y:26,opacity:0,duration:.9,ease:'power3.out',
+        scrollTrigger:{trigger:h,start:'top 88%',once:true}});
+    });
+  }
+
+  /* ---------- ReactBits-style: ShinyText on eyebrows + hero badge ---------- */
+  document.querySelectorAll('.eyebrow,.hero-badge').forEach(function(el){el.classList.add('shiny');});
+
+  /* ---------- ReactBits-style: SpotlightCard glow follows cursor ---------- */
+  document.querySelectorAll('#serviceGrid .card').forEach(function(card){
+    card.addEventListener('mousemove',function(e){
+      var r=card.getBoundingClientRect();
+      card.style.setProperty('--mx',(e.clientX-r.left)+'px');
+      card.style.setProperty('--my',(e.clientY-r.top)+'px');
+    });
+  });
+
+  /* ---------- ReactBits-style: ClickSpark particles ---------- */
+  var cv=document.createElement('canvas');cv.id='sparkCanvas';document.body.appendChild(cv);
+  var ctx=cv.getContext('2d'),sparks=[],rafOn=false;
+  function sizeCv(){cv.width=window.innerWidth;cv.height=window.innerHeight;}
+  sizeCv();window.addEventListener('resize',sizeCv);
+  function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    sparks=sparks.filter(function(p){return p.life>0;});
+    sparks.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.life-=16;
+      ctx.globalAlpha=Math.max(p.life/600,0);ctx.fillStyle=p.color;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    if(sparks.length){requestAnimationFrame(loop);}else{rafOn=false;}
+  }
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('.btn,.btn-white,.chip,.card,.ind,.wa-float'))return;
+    var cols=['#22D3EE','#8B5CF6','#ffffff'];
+    for(var i=0;i<12;i++){
+      var a=Math.random()*Math.PI*2,sp=2+Math.random()*4;
+      sparks.push({x:e.clientX,y:e.clientY,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,
+        r:1.5+Math.random()*2.5,life:600,color:cols[i%3]});
+    }
+    if(!rafOn){rafOn=true;requestAnimationFrame(loop);}
+  });
+
+  /* ---------- Motion (motion.dev): magnetic buttons ---------- */
+  import('motion').then(function(mod){
+    var animate=mod.animate;
+    document.querySelectorAll('.btn,.btn-white,.chip,.wa-float').forEach(function(el){
+      el.classList.add('magnet');
+      el.addEventListener('mousemove',function(e){
+        var r=el.getBoundingClientRect();
+        animate(el,{x:(e.clientX-(r.left+r.width/2))*.28,y:(e.clientY-(r.top+r.height/2))*.28},
+          {type:'spring',stiffness:320,damping:17});
+      });
+      el.addEventListener('mouseleave',function(){
+        animate(el,{x:0,y:0},{type:'spring',stiffness:260,damping:16});
+      });
+    });
+  }).catch(function(){/* offline: magnetic effect skipped, site unaffected */});
+})();
+</script>
 <script>
 function sendToWhatsApp(f){
   var n=f.querySelector('input').value.trim();
@@ -450,6 +615,7 @@ function autoSlide(){slTimer=setInterval(function(){showSlide(cur+1);},3000);}
 document.querySelector('.hero-arrow.prev').addEventListener('click',function(){clearInterval(slTimer);showSlide(cur-1);autoSlide();});
 document.querySelector('.hero-arrow.next').addEventListener('click',function(){clearInterval(slTimer);showSlide(cur+1);autoSlide();});
 autoSlide();restartProg();
+if(!window.RC_MOTION && 'IntersectionObserver' in window){
 var io=new IntersectionObserver(function(es){
   es.forEach(function(e){
     if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}
@@ -458,8 +624,9 @@ var io=new IntersectionObserver(function(es){
 document.querySelectorAll('.card,.ind,.step,.why div,.spotlight,.cta-band,form,.faq details').forEach(function(el){
   el.classList.add('reveal');io.observe(el);
 });
+}
 var statsEl=document.querySelector('.stats');
-if(statsEl){
+if(statsEl && !window.RC_MOTION && 'IntersectionObserver' in window){
   var counted=false;
   new IntersectionObserver(function(es,ob){
     if(es[0].isIntersecting&&!counted){
